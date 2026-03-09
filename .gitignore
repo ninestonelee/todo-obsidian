@@ -7,5 +7,13 @@ node_modules/
 test-results/
 playwright-report/
 *.png
-.env
 .vercel
+
+# 민감 파일 (v2 정책 섹션 6)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+credentials.json
+secrets/
