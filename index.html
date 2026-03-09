@@ -1100,7 +1100,6 @@
             const $categoryTabs = document.getElementById('categoryTabs');
             const $todoList = document.getElementById('todoList');
             const $searchInput = document.getElementById('searchInput');
-            const $filterPills = document.querySelectorAll('.pill');
 
             // ===== ID Generator =====
             function genId() {
@@ -1591,15 +1590,15 @@ status: active
             // Search
             $searchInput.addEventListener('input', () => renderTodos());
 
-            // Filter pills
-            $filterPills.forEach(pill => {
-                pill.addEventListener('click', () => {
-                    $filterPills.forEach(p => p.classList.remove('active'));
-                    pill.classList.add('active');
-                    state.activeFilter = pill.dataset.filter;
-                    saveState();
-                    renderTodos();
-                });
+            // Filter pills (event delegation for reliability)
+            document.querySelector('.filter-pills').addEventListener('click', (e) => {
+                const pill = e.target.closest('.pill');
+                if (!pill) return;
+                document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+                pill.classList.add('active');
+                state.activeFilter = pill.dataset.filter;
+                saveState();
+                renderTodos();
             });
 
             // Keyboard shortcut (Ctrl+N to focus input)
@@ -1683,7 +1682,7 @@ status: active
             }
 
             // Restore active filter pill
-            $filterPills.forEach(p => {
+            document.querySelectorAll('.pill').forEach(p => {
                 p.classList.toggle('active', p.dataset.filter === state.activeFilter);
             });
         })();
