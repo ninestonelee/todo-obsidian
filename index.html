@@ -1412,6 +1412,86 @@
                 }
             }
 
+            // ===== Obsidian Individual Note =====
+            async function createTodoNote(todo) {
+                if (!state.obsidianApiKey) return;
+                const API_URL = `https://127.0.0.1:${state.obsidianApiPort}`;
+                const notePath = `todos/${todo.text}.md`;
+                const headers = {
+                    'Authorization': `Bearer ${state.obsidianApiKey}`,
+                    'Content-Type': 'text/markdown'
+                };
+
+                const now = new Date(todo.createdAt);
+                const dateStr = `${now.getFullYear()}. ${String(now.getMonth() + 1).padStart(2, '0')}. ${String(now.getDate()).padStart(2, '0')}.`;
+
+                const content = `---
+title: ${todo.text}
+category: ${todo.category}
+priority: ${todo.priority}
+date: ${dateStr}
+status: active
+---
+
+# ${todo.text}
+
+> 이 노트는 Todo Obsidian 앱에서 자동 생성되었습니다.
+
+상세 내용을 여기에 작성하세요...
+`;
+
+                try {
+                    await fetch(`${API_URL}/vault/${encodeURIComponent(notePath)}`, {
+                        method: 'PUT', headers, body: content
+                    });
+                } catch (err) {
+                    console.error('Note create error:', err);
+                }
+            }
+
+            async function updateTodoNote(todo) {
+                if (!state.obsidianApiKey) return;
+                const API_URL = `https://127.0.0.1:${state.obsidianApiPort}`;
+                const notePath = `todos/${todo.text}.md`;
+                const headers = {
+                    'Authorization': `Bearer ${state.obsidianApiKey}`,
+                    'Accept': 'text/markdown'
+                };
+
+                try {
+                    const res = await fetch(`${API_URL}/vault/${encodeURIComponent(notePath)}`, { headers });
+                    if (!res.ok) return;
+                    let content = await res.text();
+
+                    // Update frontmatter status
+                    const newStatus = todo.completed ? 'done' : 'active';
+                    content = content.replace(/^status: .+$/m, `status: ${newStatus}`);
+
+                    await fetch(`${API_URL}/vault/${encodeURIComponent(notePath)}`, {
+                        method: 'PUT',
+                        headers: { 'Authorization': headers.Authorization, 'Content-Type': 'text/markdown' },
+                        body: content
+                    });
+                } catch (err) {
+                    console.error('Note update error:', err);
+                }
+            }
+
+            async function deleteTodoNote(todo) {
+                if (!state.obsidianApiKey) return;
+                const API_URL = `https://127.0.0.1:${state.obsidianApiPort}`;
+                const notePath = `todos/${todo.text}.md`;
+
+                try {
+                    await fetch(`${API_URL}/vault/${encodeURIComponent(notePath)}`, {
+                        method: 'DELETE',
+                        headers: { 'Authorization': `Bearer ${state.obsidianApiKey}` }
+                    });
+                } catch (err) {
+                    console.error('Note delete error:', err);
+                }
+            }
+
             // ===== CRUD =====
             function addTodo(text, category, priority) {
                 const newTodo = {
@@ -1429,6 +1509,7 @@
 
                 if (state.obsidianApiKey) {
                     syncToObsidian(newTodo, 'create').then(() => toast('옵시디언 동기화 완료', 'cloud_done'));
+                    createTodoNote(newTodo);
                 }
             }
 
@@ -1442,6 +1523,7 @@
 
                     if (state.obsidianApiKey) {
                         syncToObsidian(todo, 'update');
+                        updateTodoNote(todo);
                     }
                 }
             }
@@ -1456,15 +1538,16 @@
 
                     if (state.obsidianApiKey) {
                         syncToObsidian(todo, 'delete');
+                        deleteTodoNote(todo);
                     }
                 }
             }
 
             function openObsidianNote(id) {
-                if (!state.obsidianTargetPath) return;
-                // 'todo-obsidian' 대신 사용자의 기본 vault 이름이 들어갈 수 있도록 변경하거나 현재는 고정
+                const todo = state.todos.find(t => t.id === id);
+                if (!todo) return;
                 const vaultName = encodeURIComponent('todo-obsidian');
-                const filePath = encodeURIComponent(state.obsidianTargetPath.replace(/^\//, ''));
+                const filePath = encodeURIComponent(`todos/${todo.text}`);
                 window.location.href = `obsidian://open?vault=${vaultName}&file=${filePath}`;
                 toast('옵시디언에서 여는 중...', 'open_in_new');
             }
