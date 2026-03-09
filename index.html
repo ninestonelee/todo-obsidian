@@ -1,0 +1,1610 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo Obsidian — 할 일 관리</title>
+    <meta name="description" content="Obsidian 스타일의 프리미엄 다크 투두 앱">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Symbols+Rounded" rel="stylesheet">
+    <style>
+        /* ===== Reset & Variables ===== */
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --bg-primary: #1a1a2e;
+            --bg-secondary: #16213e;
+            --bg-card: rgba(30, 30, 60, 0.6);
+            --bg-card-hover: rgba(40, 40, 80, 0.7);
+            --bg-input: rgba(255, 255, 255, 0.05);
+            --border: rgba(255, 255, 255, 0.08);
+            --border-active: rgba(138, 106, 228, 0.5);
+            --text-primary: #e8e8f0;
+            --text-secondary: #9898b8;
+            --text-muted: #6868a0;
+            --accent: #8a6ae4;
+            --accent-light: #b08aff;
+            --accent-glow: rgba(138, 106, 228, 0.3);
+            --success: #4ade80;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --priority-high: #f87171;
+            --priority-medium: #fbbf24;
+            --priority-low: #60a5fa;
+            --radius: 12px;
+            --radius-sm: 8px;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 50%, #0f3460 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* ===== Background Effects ===== */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle at 30% 20%, rgba(138, 106, 228, 0.08) 0%, transparent 50%),
+                radial-gradient(circle at 70% 80%, rgba(96, 165, 250, 0.06) 0%, transparent 50%);
+            z-index: 0;
+            animation: bgFloat 20s ease-in-out infinite;
+        }
+
+        @keyframes bgFloat {
+
+            0%,
+            100% {
+                transform: translate(0, 0);
+            }
+
+            50% {
+                transform: translate(-3%, 3%);
+            }
+        }
+
+        /* ===== Layout ===== */
+        .app-container {
+            position: relative;
+            z-index: 1;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        /* ===== Header ===== */
+        .app-header {
+            text-align: center;
+            padding: 40px 0 30px;
+            position: relative;
+        }
+
+        .app-header h1 {
+            font-size: 2.2rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-light), var(--accent), #60a5fa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -0.5px;
+            display: inline-flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .app-header h1 .material-symbols-rounded {
+            font-size: 2.4rem;
+            background: linear-gradient(135deg, var(--accent-light), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .app-header p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            margin-top: 6px;
+        }
+
+        .btn-settings {
+            position: absolute;
+            top: 30px;
+            right: 10px;
+            background: rgba(138, 106, 228, 0.15);
+            border: 1px solid var(--accent);
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            z-index: 10;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-settings:hover {
+            color: #fff;
+            border-color: var(--accent-light);
+            background: rgba(138, 106, 228, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-settings.active {
+            color: var(--success);
+            border-color: rgba(74, 222, 128, 0.4);
+            background: rgba(74, 222, 128, 0.1);
+        }
+
+        /* ===== Stats Bar ===== */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            text-align: center;
+            transition: var(--transition);
+        }
+
+        .stat-card:hover {
+            background: var(--bg-card-hover);
+            border-color: var(--border-active);
+            transform: translateY(-2px);
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: var(--accent-light);
+            line-height: 1;
+        }
+
+        .stat-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* ===== Add Todo Section ===== */
+        .add-section {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            margin-bottom: 24px;
+            transition: var(--transition);
+        }
+
+        .add-section:focus-within {
+            border-color: var(--border-active);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+
+        .add-form {
+            display: flex;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .form-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group label {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .form-group input,
+        .form-group select {
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.9rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            border-color: var(--border-active);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-group select option {
+            background: var(--bg-secondary);
+            color: var(--text-primary);
+        }
+
+        .btn-add {
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            border: none;
+            border-radius: var(--radius-sm);
+            padding: 10px 20px;
+            color: white;
+            font-family: inherit;
+            font-weight: 600;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px var(--accent-glow);
+        }
+
+        .btn-add:active {
+            transform: scale(0.97);
+        }
+
+        /* ===== Toolbar ===== */
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .search-box {
+            flex: 1;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .search-box input {
+            width: 100%;
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 10px 14px 10px 40px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.85rem;
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .search-box input:focus {
+            border-color: var(--border-active);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .search-box input::placeholder {
+            color: var(--text-muted);
+        }
+
+        .search-box .material-symbols-rounded {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.2rem;
+        }
+
+        .filter-pills {
+            display: flex;
+            gap: 6px;
+        }
+
+        .pill {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.78rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .pill:hover {
+            border-color: var(--accent);
+            color: var(--text-primary);
+        }
+
+        .pill.active {
+            background: var(--accent);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        /* ===== Category Tabs ===== */
+        .category-tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 16px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .category-tabs::-webkit-scrollbar {
+            height: 3px;
+        }
+
+        .category-tabs::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+
+        .cat-tab {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 6px 16px;
+            color: var(--text-secondary);
+            font-family: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: var(--transition);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cat-tab:hover {
+            border-color: var(--accent);
+        }
+
+        .cat-tab.active {
+            background: linear-gradient(135deg, var(--accent), var(--accent-light));
+            border-color: transparent;
+            color: white;
+        }
+
+        .cat-tab .count {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 10px;
+            padding: 1px 7px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .cat-tab.active .count {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* ===== Category Management ===== */
+        .add-cat-btn {
+            background: transparent;
+            border: 1px dashed var(--border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            color: var(--text-muted);
+            font-family: inherit;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .add-cat-btn:hover {
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+
+        .cat-input-wrap {
+            display: none;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .cat-input-wrap.show {
+            display: flex;
+        }
+
+        .cat-input-wrap input {
+            background: var(--bg-input);
+            border: 1px solid var(--border-active);
+            border-radius: 20px;
+            padding: 6px 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.8rem;
+            outline: none;
+            width: 120px;
+        }
+
+        .cat-input-wrap .icon-btn {
+            background: none;
+            border: none;
+            color: var(--success);
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+        }
+
+        /* ===== Todo List ===== */
+        .todo-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .todo-item {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 14px 18px;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            transition: var(--transition);
+            animation: slideIn 0.3s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .todo-item:hover {
+            background: var(--bg-card-hover);
+            border-color: rgba(138, 106, 228, 0.2);
+            transform: translateX(4px);
+        }
+
+        .todo-item.completed {
+            opacity: 0.5;
+        }
+
+        .todo-item.completed .todo-text {
+            text-decoration: line-through;
+            color: var(--text-muted);
+        }
+
+        /* Priority indicator */
+        .todo-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            border-radius: 3px 0 0 3px;
+        }
+
+        .todo-item[data-priority="high"]::before {
+            background: var(--priority-high);
+        }
+
+        .todo-item[data-priority="medium"]::before {
+            background: var(--priority-medium);
+        }
+
+        .todo-item[data-priority="low"]::before {
+            background: var(--priority-low);
+        }
+
+        /* Checkbox */
+        .todo-checkbox {
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            flex-shrink: 0;
+        }
+
+        .todo-checkbox:hover {
+            border-color: var(--accent);
+        }
+
+        .todo-item.completed .todo-checkbox {
+            background: var(--accent);
+            border-color: var(--accent);
+        }
+
+        .todo-item.completed .todo-checkbox::after {
+            content: '✓';
+            color: white;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .todo-content {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .todo-text {
+            font-size: 0.92rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            word-break: break-word;
+        }
+
+        .todo-meta {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+        }
+
+        .todo-badge {
+            font-size: 0.7rem;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-weight: 500;
+        }
+
+        .badge-cat {
+            background: rgba(138, 106, 228, 0.15);
+            color: var(--accent-light);
+        }
+
+        .badge-priority {
+            font-weight: 600;
+        }
+
+        .badge-priority.high {
+            background: rgba(248, 113, 113, 0.15);
+            color: var(--priority-high);
+        }
+
+        .badge-priority.medium {
+            background: rgba(251, 191, 36, 0.15);
+            color: var(--priority-medium);
+        }
+
+        .badge-priority.low {
+            background: rgba(96, 165, 250, 0.15);
+            color: var(--priority-low);
+        }
+
+        .todo-date {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+
+        .todo-actions {
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: var(--transition);
+        }
+
+        .todo-item:hover .todo-actions {
+            opacity: 1;
+        }
+
+        .todo-actions button {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 6px;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+        }
+
+        .todo-actions button:hover {
+            color: var(--danger);
+            background: rgba(248, 113, 113, 0.1);
+        }
+
+        .todo-actions .btn-obsidian:hover {
+            color: var(--accent-light);
+            background: rgba(138, 106, 228, 0.1);
+        }
+
+        .todo-actions .material-symbols-rounded {
+            font-size: 1.1rem;
+        }
+
+        /* ===== Empty State ===== */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .material-symbols-rounded {
+            font-size: 4rem;
+            color: var(--accent);
+            opacity: 0.3;
+            margin-bottom: 12px;
+        }
+
+        .empty-state h3 {
+            font-size: 1.1rem;
+            margin-bottom: 6px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state p {
+            font-size: 0.85rem;
+        }
+
+        /* ===== Toast ===== */
+        .toast-container {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .toast {
+            background: var(--bg-card);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 18px;
+            color: var(--text-primary);
+            font-size: 0.85rem;
+            box-shadow: var(--shadow);
+            animation: toastIn 0.3s ease-out, toastOut 0.3s ease-in 2.5s forwards;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        @keyframes toastIn {
+            from {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+        }
+
+        @keyframes toastOut {
+            to {
+                opacity: 0;
+                transform: translateX(40px);
+            }
+        }
+
+        /* ===== Modal ===== */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: var(--transition);
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: var(--shadow);
+            transform: translateY(20px);
+            transition: var(--transition);
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .modal-title .material-symbols-rounded {
+            color: var(--accent-light);
+            font-size: 1.4rem;
+        }
+
+        .modal-body p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 16px;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            color: var(--text-primary);
+            font-family: inherit;
+            font-size: 0.95rem;
+            outline: none;
+            transition: var(--transition);
+            margin-bottom: 20px;
+        }
+
+        .modal-input:focus {
+            border-color: var(--border-active);
+            box-shadow: 0 0 8px var(--accent-glow);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+
+        .btn-modal {
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: var(--transition);
+        }
+
+        .btn-modal-cancel {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-primary);
+        }
+
+        .btn-modal-cancel:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .btn-modal-save {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .btn-modal-save:hover {
+            background: var(--accent-light);
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .app-container {
+                padding: 12px;
+            }
+
+            .app-header {
+                padding: 50px 0 20px;
+            }
+
+            .app-header h1 {
+                font-size: 1.6rem;
+            }
+
+            .btn-settings {
+                top: 10px;
+                right: 10px;
+                width: 38px;
+                height: 38px;
+            }
+
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 8px;
+            }
+
+            .stat-card {
+                padding: 12px;
+            }
+
+            .stat-value {
+                font-size: 1.4rem;
+            }
+
+            .add-form {
+                flex-direction: column;
+            }
+
+            .form-group {
+                width: 100%;
+            }
+
+            .btn-add {
+                width: 100%;
+                justify-content: center;
+            }
+
+            .toolbar {
+                flex-direction: column;
+            }
+
+            .search-box {
+                min-width: unset;
+            }
+
+            .todo-actions {
+                opacity: 1;
+            }
+
+            .todo-item {
+                padding: 12px 14px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .filter-pills {
+                flex-wrap: wrap;
+            }
+        }
+
+        /* ===== Scrollbar ===== */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 3px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <header class="app-header">
+            <h1>
+                <span class="material-symbols-rounded">check_circle</span>
+                Todo Obsidian
+            </h1>
+            <p>깔끔하게 정리하는 나만의 할 일</p>
+            <button id="btnSettings" class="btn-settings" title="API 동기화 설정">
+                <span class="material-symbols-rounded">sync</span>
+            </button>
+        </header>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-value" id="statTotal">0</div>
+                <div class="stat-label">전체</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statActive">0</div>
+                <div class="stat-label">진행중</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statCompleted">0</div>
+                <div class="stat-label">완료</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="statRate">0%</div>
+                <div class="stat-label">완료율</div>
+            </div>
+        </div>
+
+        <!-- Add Todo -->
+        <div class="add-section">
+            <form class="add-form" id="addForm">
+                <div class="form-group" style="flex:3">
+                    <label>할 일</label>
+                    <input type="text" id="todoInput" placeholder="새로운 할 일을 입력하세요..." autocomplete="off">
+                </div>
+                <div class="form-group" style="flex:1">
+                    <label>카테고리</label>
+                    <select id="catSelect"></select>
+                </div>
+                <div class="form-group" style="flex:0.8">
+                    <label>우선순위</label>
+                    <select id="prioritySelect">
+                        <option value="medium">⚡ 보통</option>
+                        <option value="high">🔥 높음</option>
+                        <option value="low">💤 낮음</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-add">
+                    <span class="material-symbols-rounded" style="font-size:1.1rem">add</span>
+                    추가
+                </button>
+            </form>
+        </div>
+
+        <!-- Category Tabs -->
+        <div class="category-tabs" id="categoryTabs">
+            <!-- Dynamically generated -->
+        </div>
+
+        <!-- Toolbar -->
+        <div class="toolbar">
+            <div class="search-box">
+                <span class="material-symbols-rounded">search</span>
+                <input type="text" id="searchInput" placeholder="검색...">
+            </div>
+            <div class="filter-pills">
+                <button class="pill active" data-filter="all">전체</button>
+                <button class="pill" data-filter="active">진행중</button>
+                <button class="pill" data-filter="completed">완료</button>
+            </div>
+        </div>
+
+        <!-- Todo List -->
+        <div class="todo-list" id="todoList"></div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-title">
+                <span class="material-symbols-rounded">cloud_sync</span>
+                API 동기화 설정
+            </div>
+            <div class="modal-body">
+                <p>Obsidian "Local REST API" 플러그인 정보를 입력하세요.<br><br>입력 시 옵시디언의 지정된 마크다운 노트 파일과 할 일 목록이 실시간(양방향)으로
+                    동기화됩니다. 해제하려면 API Key를 비워두세요.</p>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">API
+                        포트 번호</label>
+                    <input type="text" id="apiPortInput" class="modal-input" placeholder="27123"
+                        style="margin-bottom: 0;">
+                </div>
+
+                <div style="margin-bottom: 12px;">
+                    <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">API
+                        Key (Bearer Token)</label>
+                    <input type="text" id="apiKeyInput" class="modal-input" placeholder="API Key 입력..."
+                        autocomplete="off" style="margin-bottom: 0;">
+                </div>
+
+                <div style="margin-bottom: 20px;">
+                    <label style="display:block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 4px;">타겟
+                        마크다운 파일 경로 (예: Tasks/Daily.md)</label>
+                    <input type="text" id="apiPathInput" class="modal-input" placeholder="Todos.md" autocomplete="off"
+                        style="margin-bottom: 0;">
+                </div>
+            </div>
+            <div class="modal-actions">
+                <button class="btn-modal btn-modal-cancel" id="btnSettingsCancel">취소</button>
+                <button class="btn-modal btn-modal-save" id="btnSettingsSave">저장</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <script>
+        (function () {
+            'use strict';
+
+            // ===== State =====
+            const STORAGE_KEY = 'todo_obsidian_data';
+            const DEFAULT_CATEGORIES = ['업무', '개인', '학습', '아이디어'];
+            let state = loadState();
+
+            function loadState() {
+                try {
+                    const saved = localStorage.getItem(STORAGE_KEY);
+                    if (saved) {
+                        const parsed = JSON.parse(saved);
+                        return {
+                            todos: parsed.todos || [],
+                            categories: parsed.categories || [...DEFAULT_CATEGORIES],
+                            activeCategory: parsed.activeCategory || 'all',
+                            activeFilter: parsed.activeFilter || 'all',
+                            obsidianApiKey: parsed.obsidianApiKey || '',
+                            obsidianApiPort: parsed.obsidianApiPort || '27124',
+                            obsidianTargetPath: parsed.obsidianTargetPath || 'Todos.md',
+                        };
+                    }
+                } catch (e) { console.warn('State load error', e); }
+                return {
+                    todos: [],
+                    categories: [...DEFAULT_CATEGORIES],
+                    activeCategory: 'all',
+                    activeFilter: 'all',
+                    obsidianApiKey: '',
+                    obsidianApiPort: '27124',
+                    obsidianTargetPath: 'Todos.md',
+                };
+            }
+
+            function saveState() {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+            }
+
+            // ===== DOM References =====
+            const $addForm = document.getElementById('addForm');
+            const $todoInput = document.getElementById('todoInput');
+            const $catSelect = document.getElementById('catSelect');
+            const $prioritySelect = document.getElementById('prioritySelect');
+            const $categoryTabs = document.getElementById('categoryTabs');
+            const $todoList = document.getElementById('todoList');
+            const $searchInput = document.getElementById('searchInput');
+            const $filterPills = document.querySelectorAll('.pill');
+
+            // ===== ID Generator =====
+            function genId() {
+                return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+            }
+
+            // ===== Category Select =====
+            function renderCategorySelect() {
+                $catSelect.innerHTML = state.categories.map(c =>
+                    `<option value="${c}">${c}</option>`
+                ).join('');
+            }
+
+            // ===== Category Tabs =====
+            function renderCategoryTabs() {
+                const counts = { all: state.todos.length };
+                state.categories.forEach(c => {
+                    counts[c] = state.todos.filter(t => t.category === c).length;
+                });
+
+                let html = `<button class="cat-tab ${state.activeCategory === 'all' ? 'active' : ''}" data-cat="all">
+                전체 <span class="count">${counts.all}</span>
+            </button>`;
+
+                state.categories.forEach(c => {
+                    html += `<button class="cat-tab ${state.activeCategory === c ? 'active' : ''}" data-cat="${c}">
+                    ${c} <span class="count">${counts[c] || 0}</span>
+                </button>`;
+                });
+
+                html += `<button class="add-cat-btn" id="addCatBtn">
+                <span class="material-symbols-rounded" style="font-size:1rem">add</span> 카테고리
+            </button>`;
+                html += `<div class="cat-input-wrap" id="catInputWrap">
+                <input type="text" id="newCatInput" placeholder="이름..." maxlength="10">
+                <button class="icon-btn" id="confirmCatBtn">
+                    <span class="material-symbols-rounded">check</span>
+                </button>
+            </div>`;
+
+                $categoryTabs.innerHTML = html;
+
+                // Event listeners
+                $categoryTabs.querySelectorAll('.cat-tab').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        state.activeCategory = btn.dataset.cat;
+                        saveState();
+                        renderCategoryTabs();
+                        renderTodos();
+                    });
+                });
+
+                const $addCatBtn = document.getElementById('addCatBtn');
+                const $catInputWrap = document.getElementById('catInputWrap');
+                const $newCatInput = document.getElementById('newCatInput');
+                const $confirmCatBtn = document.getElementById('confirmCatBtn');
+
+                $addCatBtn.addEventListener('click', () => {
+                    $catInputWrap.classList.toggle('show');
+                    if ($catInputWrap.classList.contains('show')) $newCatInput.focus();
+                });
+
+                const addCategory = () => {
+                    const name = $newCatInput.value.trim();
+                    if (name && !state.categories.includes(name)) {
+                        state.categories.push(name);
+                        saveState();
+                        renderCategorySelect();
+                        renderCategoryTabs();
+                        toast('카테고리 추가됨: ' + name, 'check_circle');
+                    }
+                    $newCatInput.value = '';
+                    $catInputWrap.classList.remove('show');
+                };
+
+                $confirmCatBtn.addEventListener('click', addCategory);
+                $newCatInput.addEventListener('keydown', e => { if (e.key === 'Enter') addCategory(); });
+            }
+
+            // ===== Filtered Todos =====
+            function getFilteredTodos() {
+                let list = [...state.todos];
+                // Category filter
+                if (state.activeCategory !== 'all') {
+                    list = list.filter(t => t.category === state.activeCategory);
+                }
+                // Status filter
+                if (state.activeFilter === 'active') {
+                    list = list.filter(t => !t.completed);
+                } else if (state.activeFilter === 'completed') {
+                    list = list.filter(t => t.completed);
+                }
+                // Search
+                const query = $searchInput.value.trim().toLowerCase();
+                if (query) {
+                    list = list.filter(t => t.text.toLowerCase().includes(query));
+                }
+                // Sort: uncompleted first, then by priority (high > medium > low), then newest
+                const prioOrder = { high: 0, medium: 1, low: 2 };
+                list.sort((a, b) => {
+                    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                    if (prioOrder[a.priority] !== prioOrder[b.priority]) return prioOrder[a.priority] - prioOrder[b.priority];
+                    return b.createdAt - a.createdAt;
+                });
+                return list;
+            }
+
+            // ===== Render Todos =====
+            function renderTodos() {
+                const list = getFilteredTodos();
+                if (list.length === 0) {
+                    $todoList.innerHTML = `
+                    <div class="empty-state">
+                        <span class="material-symbols-rounded">inbox</span>
+                        <h3>할 일이 없습니다</h3>
+                        <p>위에서 새로운 할 일을 추가해보세요!</p>
+                    </div>`;
+                    return;
+                }
+
+                const prioLabel = { high: '높음', medium: '보통', low: '낮음' };
+
+                $todoList.innerHTML = list.map(todo => {
+                    const date = new Date(todo.createdAt);
+                    const dateStr = `${date.getMonth() + 1}/${date.getDate()} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+                    return `
+                <div class="todo-item ${todo.completed ? 'completed' : ''}" data-id="${todo.id}" data-priority="${todo.priority}">
+                    <div class="todo-checkbox" data-id="${todo.id}"></div>
+                    <div class="todo-content">
+                        <div class="todo-text">${escapeHtml(todo.text)}</div>
+                        <div class="todo-meta">
+                            <span class="todo-badge badge-cat">${escapeHtml(todo.category)}</span>
+                            <span class="todo-badge badge-priority ${todo.priority}">${prioLabel[todo.priority]}</span>
+                            <span class="todo-date">${dateStr}</span>
+                        </div>
+                    </div>
+                    <div class="todo-actions">
+                        <button class="btn-obsidian" data-obsidian="${todo.id}" title="옵시디언에서 열기">
+                            <span class="material-symbols-rounded">open_in_new</span>
+                        </button>
+                        <button data-delete="${todo.id}" title="삭제">
+                            <span class="material-symbols-rounded">delete</span>
+                        </button>
+                    </div>
+                </div>`;
+                }).join('');
+
+                // Toggle complete
+                $todoList.querySelectorAll('.todo-checkbox').forEach(cb => {
+                    cb.addEventListener('click', () => toggleTodo(cb.dataset.id));
+                });
+                // Delete
+                $todoList.querySelectorAll('[data-delete]').forEach(btn => {
+                    btn.addEventListener('click', () => deleteTodo(btn.dataset.delete));
+                });
+                // Obsidian
+                $todoList.querySelectorAll('[data-obsidian]').forEach(btn => {
+                    btn.addEventListener('click', () => openObsidianNote(btn.dataset.obsidian));
+                });
+            }
+
+            // ===== Stats =====
+            function renderStats() {
+                const total = state.todos.length;
+                const completed = state.todos.filter(t => t.completed).length;
+                const active = total - completed;
+                const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+                document.getElementById('statTotal').textContent = total;
+                document.getElementById('statActive').textContent = active;
+                document.getElementById('statCompleted').textContent = completed;
+                document.getElementById('statRate').textContent = rate + '%';
+            }
+
+            // ===== Obsidian Local REST API Sync =====
+            function makeTodoLine(todo) {
+                const check = todo.completed ? 'x' : ' ';
+                const prioSymbol = todo.priority === 'high' ? '🔥' : (todo.priority === 'low' ? '💤' : '⚡');
+                return `- [${check}] ${todo.text} #${todo.category} ${prioSymbol}`;
+            }
+
+            async function fetchTodosFromObsidian() {
+                if (!state.obsidianApiKey || !state.obsidianTargetPath) return;
+                const API_URL = `https://127.0.0.1:${state.obsidianApiPort}`;
+                const path = state.obsidianTargetPath.replace(/^\//, '');
+                const headers = {
+                    'Authorization': `Bearer ${state.obsidianApiKey}`,
+                    'Accept': 'application/vnd.obsidian.md+json'
+                };
+
+                try {
+                    const res = await fetch(`${API_URL}/vault/${path}`, { headers });
+                    if (!res.ok) {
+                        if (res.status === 404) return; // No file yet
+                        throw new Error('Fetch failed: ' + res.status);
+                    }
+                    const content = await res.text();
+
+                    const lines = content.split('\n');
+                    const newTodos = [];
+
+                    lines.forEach((line) => {
+                        const match = line.match(/^- \[([ xX])\] (.*)$/);
+                        if (match) {
+                            const completed = match[1].trim().toLowerCase() === 'x';
+                            let textParams = match[2];
+
+                            let priority = 'medium';
+                            if (textParams.includes('🔥')) { priority = 'high'; textParams = textParams.replace('🔥', ''); }
+                            else if (textParams.includes('💤')) { priority = 'low'; textParams = textParams.replace('💤', ''); }
+                            else if (textParams.includes('⚡')) { textParams = textParams.replace('⚡', ''); }
+
+                            let category = '업무';
+                            const tagMatch = textParams.match(/#(\S+)/);
+                            if (tagMatch) {
+                                category = tagMatch[1];
+                                textParams = textParams.replace(tagMatch[0], '');
+                            }
+
+                            const text = textParams.trim();
+                            if (text) {
+                                const existing = state.todos.find(t => t.text === text);
+                                newTodos.push({
+                                    id: existing ? existing.id : genId(),
+                                    text: text,
+                                    category: category,
+                                    priority: priority,
+                                    completed: completed,
+                                    createdAt: existing ? existing.createdAt : Date.now(),
+                                    originalLineText: line
+                                });
+                            }
+                        }
+                    });
+
+                    state.todos = newTodos;
+                    saveState();
+                    renderAll();
+                    toast('옵시디언 데이터를 동기화했습니다.', 'cloud_download');
+
+                } catch (err) {
+                    console.error('Fetch Obsidian error:', err);
+                    toast('옵시디언 연결 실패. API 설정과 플러그인 상태를 확인하세요.', 'error');
+                }
+            }
+
+            async function syncToObsidian(todo, action) {
+                if (!state.obsidianApiKey || !state.obsidianTargetPath) return;
+                const API_URL = `https://127.0.0.1:${state.obsidianApiPort}`;
+                const path = state.obsidianTargetPath.replace(/^\//, '');
+                const headers = {
+                    'Authorization': `Bearer ${state.obsidianApiKey}`,
+                    'Content-Type': 'text/markdown'
+                };
+                const endpoint = `${API_URL}/vault/${path}`;
+
+                try {
+                    let content = '';
+                    const getRes = await fetch(endpoint, { headers: { 'Authorization': headers.Authorization, 'Accept': 'application/vnd.obsidian.md+json' } });
+
+                    if (getRes.ok) {
+                        content = await getRes.text();
+                    } else if (getRes.status !== 404) {
+                        throw new Error('Failed to read file');
+                    }
+
+                    const newLine = makeTodoLine(todo);
+
+                    if (action === 'create') {
+                        content = content ? (content + '\n' + newLine) : newLine;
+                        todo.originalLineText = newLine;
+                        saveState();
+                    } else if (action === 'update' || action === 'delete') {
+                        const oldLine = todo.originalLineText;
+                        if (oldLine && content.includes(oldLine)) {
+                            if (action === 'delete') {
+                                content = content.includes(oldLine + '\n') ? content.replace(oldLine + '\n', '') : content.replace(oldLine, '');
+                            } else {
+                                content = content.replace(oldLine, newLine);
+                                todo.originalLineText = newLine;
+                                saveState();
+                            }
+                        } else {
+                            // Fallback
+                            const regex = new RegExp(`^- \\[[ xX]\\] ${todo.text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}.*$`, 'm');
+                            const match = content.match(regex);
+                            if (match) {
+                                if (action === 'delete') {
+                                    content = content.includes(match[0] + '\n') ? content.replace(match[0] + '\n', '') : content.replace(match[0], '');
+                                } else {
+                                    content = content.replace(match[0], newLine);
+                                    todo.originalLineText = newLine;
+                                    saveState();
+                                }
+                            } else if (action === 'update') {
+                                content = content ? (content + '\n' + newLine) : newLine;
+                                todo.originalLineText = newLine;
+                                saveState();
+                            }
+                        }
+                    }
+
+                    const putRes = await fetch(endpoint, { method: 'PUT', headers, body: content });
+                    if (!putRes.ok) throw new Error('Failed to write file');
+
+                } catch (err) {
+                    console.error('Obsidian Sync Error:', err);
+                    toast('옵시디언 동기화 실패', 'error');
+                }
+            }
+
+            // ===== CRUD =====
+            function addTodo(text, category, priority) {
+                const newTodo = {
+                    id: genId(),
+                    text,
+                    category,
+                    priority,
+                    completed: false,
+                    createdAt: Date.now(),
+                };
+                state.todos.push(newTodo);
+                saveState();
+                renderAll();
+                toast('할 일 추가됨', 'add_task');
+
+                if (state.obsidianApiKey) {
+                    syncToObsidian(newTodo, 'create').then(() => toast('옵시디언 동기화 완료', 'cloud_done'));
+                }
+            }
+
+            function toggleTodo(id) {
+                const todo = state.todos.find(t => t.id === id);
+                if (todo) {
+                    todo.completed = !todo.completed;
+                    saveState();
+                    renderAll();
+                    toast(todo.completed ? '완료!' : '다시 진행중', todo.completed ? 'task_alt' : 'undo');
+
+                    if (state.obsidianApiKey) {
+                        syncToObsidian(todo, 'update');
+                    }
+                }
+            }
+
+            function deleteTodo(id) {
+                const todo = state.todos.find(t => t.id === id);
+                if (todo) {
+                    state.todos = state.todos.filter(t => t.id !== id);
+                    saveState();
+                    renderAll();
+                    toast('삭제됨', 'delete');
+
+                    if (state.obsidianApiKey) {
+                        syncToObsidian(todo, 'delete');
+                    }
+                }
+            }
+
+            function openObsidianNote(id) {
+                if (!state.obsidianTargetPath) return;
+                // 'todo-obsidian' 대신 사용자의 기본 vault 이름이 들어갈 수 있도록 변경하거나 현재는 고정
+                const vaultName = encodeURIComponent('todo-obsidian');
+                const filePath = encodeURIComponent(state.obsidianTargetPath.replace(/^\//, ''));
+                window.location.href = `obsidian://open?vault=${vaultName}&file=${filePath}`;
+                toast('옵시디언에서 여는 중...', 'open_in_new');
+            }
+
+            // ===== Render All =====
+            function renderAll() {
+                renderCategorySelect();
+                renderCategoryTabs();
+                renderTodos();
+                renderStats();
+            }
+
+            // ===== Toast =====
+            function toast(msg, icon = 'info') {
+                const $container = document.getElementById('toastContainer');
+                const el = document.createElement('div');
+                el.className = 'toast';
+                el.innerHTML = `<span class="material-symbols-rounded" style="font-size:1.2rem;color:var(--accent-light)">${icon}</span> ${msg}`;
+                $container.appendChild(el);
+                setTimeout(() => el.remove(), 3000);
+            }
+
+            // ===== Utility =====
+            function escapeHtml(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            // ===== Event Listeners =====
+            // Add form
+            $addForm.addEventListener('submit', e => {
+                e.preventDefault();
+                const text = $todoInput.value.trim();
+                if (!text) return;
+                addTodo(text, $catSelect.value, $prioritySelect.value);
+                $todoInput.value = '';
+                $todoInput.focus();
+            });
+
+            // Search
+            $searchInput.addEventListener('input', () => renderTodos());
+
+            // Filter pills
+            $filterPills.forEach(pill => {
+                pill.addEventListener('click', () => {
+                    $filterPills.forEach(p => p.classList.remove('active'));
+                    pill.classList.add('active');
+                    state.activeFilter = pill.dataset.filter;
+                    saveState();
+                    renderTodos();
+                });
+            });
+
+            // Keyboard shortcut (Ctrl+N to focus input)
+            document.addEventListener('keydown', e => {
+                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                    e.preventDefault();
+                    $todoInput.focus();
+                }
+            });
+
+            // ===== Settings & Sync UI =====
+            const $btnSettings = document.getElementById('btnSettings');
+            const $settingsModal = document.getElementById('settingsModal');
+            const $apiKeyInput = document.getElementById('apiKeyInput');
+            const $apiPortInput = document.getElementById('apiPortInput');
+            const $apiPathInput = document.getElementById('apiPathInput');
+            const $btnSettingsCancel = document.getElementById('btnSettingsCancel');
+            const $btnSettingsSave = document.getElementById('btnSettingsSave');
+
+            function renderSettingsBtn() {
+                if (state.obsidianApiKey) {
+                    $btnSettings.classList.add('active');
+                } else {
+                    $btnSettings.classList.remove('active');
+                }
+            }
+
+            // Show Settings Modal
+            $btnSettings.addEventListener('click', () => {
+                $apiKeyInput.value = state.obsidianApiKey || '';
+                $apiPortInput.value = state.obsidianApiPort || '27124';
+                $apiPathInput.value = state.obsidianTargetPath || 'Todos.md';
+                $settingsModal.classList.add('show');
+                setTimeout(() => $apiKeyInput.focus(), 100);
+            });
+
+            const closeSettingsModal = () => {
+                $settingsModal.classList.remove('show');
+            };
+
+            // Hide Settings Modal
+            $btnSettingsCancel.addEventListener('click', closeSettingsModal);
+
+            // Save Settings //
+            const saveSettings = () => {
+                const key = $apiKeyInput.value.trim();
+                const port = $apiPortInput.value.trim() || '27124';
+                const path = $apiPathInput.value.trim() || 'Todos.md';
+
+                state.obsidianApiKey = key;
+                state.obsidianApiPort = port;
+                state.obsidianTargetPath = path;
+                saveState();
+                renderSettingsBtn();
+                closeSettingsModal();
+
+                if (state.obsidianApiKey) {
+                    toast('동기화 설정 저장 완료!', 'cloud_sync');
+                    // 설정 저장 후 초기 동기화(Read)를 수행해야 함 (추후 연동)
+                    fetchTodosFromObsidian();
+                } else {
+                    toast('동기화 설정이 해제되었습니다.', 'cloud_off');
+                }
+            };
+
+            $btnSettingsSave.addEventListener('click', saveSettings);
+
+            // Allow Enter key to save modal
+            $apiKeyInput.addEventListener('keydown', e => {
+                if (e.key === 'Enter') saveSettings();
+                if (e.key === 'Escape') closeSettingsModal();
+            });
+
+            // ===== Init =====
+            renderAll();
+            renderSettingsBtn();
+
+            // 페이지 로드 시 백그라운드에서 동기화 수행
+            if (state.obsidianApiKey) {
+                fetchTodosFromObsidian();
+            }
+
+            // Restore active filter pill
+            $filterPills.forEach(p => {
+                p.classList.toggle('active', p.dataset.filter === state.activeFilter);
+            });
+        })();
+    </script>
+</body>
+
+</html>

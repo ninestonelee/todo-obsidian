@@ -1,0 +1,9 @@
+.DS_Store
+.obsidian/
+todos/
+Todos.md
+V001_PRJ/
+node_modules/
+test-results/
+playwright-report/
+*.png
