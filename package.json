@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "test": "npx playwright test",
-    "test:headed": "npx playwright test --headed"
+    "test:headed": "npx playwright test --headed",
+    "worklog:write": "bash scripts/worklog/write_log.sh",
+    "worklog:verify": "bash scripts/worklog/verify_worklog.sh",
+    "hooks:install": "bash scripts/setup-hooks.sh"
   },
   "keywords": [],
   "author": "",
